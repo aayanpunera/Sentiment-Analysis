@@ -169,7 +169,31 @@ Open your web browser and navigate to:
 
 ---
 
-## 5. Running Automated Tests
+## 5. Deploying to Vercel
+
+The application is fully configured for zero-configuration serverless deployment on [Vercel](https://vercel.com/):
+
+### Ready-Made Vercel Files Included:
+- **`vercel.json`**: Configures route rewrites to the Python serverless function and bundles model assets (`models/`, `templates/`, `static/`, `database/`).
+- **`api/index.py`**: The serverless entrypoint exporting the WSGI Flask application.
+- **`.vercelignore`**: Excludes heavy raw datasets, tests, and local virtual environments to ensure rapid deployment builds under the size quota.
+- **Serverless-Adaptive Storage**: Automatically detects Vercel's read-only container environment (`VERCEL=1`) and routes SQLite transactions and Matplotlib cache to the writable `/tmp` directory.
+
+### Deployment Steps:
+1. Push the latest code to your GitHub repository:
+   ```bash
+   git push origin main
+   ```
+2. Go to your [Vercel Dashboard](https://vercel.com/new).
+3. Select **Import Git Repository** and choose `Sentiment-Analysis`.
+4. (Optional) In **Project Settings** > **Environment Variables**, you can add:
+   - `SECRET_KEY`: (Optional) Your production session secret key.
+   - `VERCEL_SUPPORT_LARGE_FUNCTIONS`: `1` (Recommended by Vercel for data science and ML runtimes).
+5. Click **Deploy**. Vercel will install dependencies, package the model pipelines, and provide you with a live `.vercel.app` URL!
+
+---
+
+## 6. Running Automated Tests
 
 Sentix includes a comprehensive pytest suite covering preprocessing, model predictions, database transactions, and end-to-end web routes:
 

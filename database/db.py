@@ -9,15 +9,32 @@ import os
 import sqlite3
 import json
 import logging
+import shutil
+import tempfile
 from typing import Dict, Any, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_DIR = os.path.join(BASE_DIR, "database")
-DEFAULT_DB_PATH = os.path.join(DB_DIR, "sentiment.db")
+IS_VERCEL = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+
+if IS_VERCEL:
+    DEFAULT_DB_PATH = os.path.join(tempfile.gettempdir(), "sentiment.db")
+else:
+    DEFAULT_DB_PATH = os.path.join(DB_DIR, "sentiment.db")
+
 SCHEMA_PATH = os.path.join(DB_DIR, "schema.sql")
 METRICS_PATH = os.path.join(BASE_DIR, "models", "metrics.json")
+PREPACKAGED_DB_PATH = os.path.join(DB_DIR, "sentiment.db")
+
+
+def _connect(path: str) -> sqlite3.Connection:
+    """Internal helper to create connection and set pragmas."""
+    conn = sqlite3.connect(path, timeout=10.0)
+    conn.execute("PRAGMA foreign_keys = ON;")
+    conn.row_factory = sqlite3.Row
+    return conn
 
 
 def get_db_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
@@ -26,20 +43,38 @@ def get_db_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
     and row_factory configured for dictionary-style column access.
     """
     path = db_path or os.environ.get("DATABASE_PATH", DEFAULT_DB_PATH)
-    conn = sqlite3.connect(path, timeout=10.0)
-    conn.execute("PRAGMA foreign_keys = ON;")
-    conn.row_factory = sqlite3.Row
-    return conn
+
+    # In serverless environments, ensure DB exists in /tmp
+    if IS_VERCEL and path != ":memory:" and not os.path.exists(path):
+        init_db(path)
+
+    return _connect(path)
 
 
 def init_db(db_path: Optional[str] = None):
     """
     Initialize SQLite database schema and seed model performance metrics.
+    Gracefully handles Vercel serverless /tmp seeding.
     """
     path = db_path or os.environ.get("DATABASE_PATH", DEFAULT_DB_PATH)
-    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
 
-    with get_db_connection(path) as conn:
+    try:
+        dir_name = os.path.dirname(os.path.abspath(path))
+        if dir_name:
+            os.makedirs(dir_name, exist_ok=True)
+    except OSError:
+        pass
+
+    # If running on Vercel and pre-packaged db exists in the repo, copy it to /tmp
+    if IS_VERCEL and path != PREPACKAGED_DB_PATH and os.path.exists(PREPACKAGED_DB_PATH) and not os.path.exists(path):
+        try:
+            logger.info(f"Copying pre-packaged database from {PREPACKAGED_DB_PATH} to {path}...")
+            shutil.copy2(PREPACKAGED_DB_PATH, path)
+            return
+        except Exception as e:
+            logger.warning(f"Failed to copy pre-packaged db: {e}. Falling back to fresh schema initialization.")
+
+    with _connect(path) as conn:
         with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
             conn.executescript(f.read())
         conn.commit()

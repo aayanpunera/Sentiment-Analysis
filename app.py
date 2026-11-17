@@ -17,19 +17,40 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
 def create_app(config_class=Config):
     """Application factory for Sentiment Analysis web application."""
-    app = Flask(__name__, template_folder="templates", static_folder="static")
+    app = Flask(
+        __name__,
+        template_folder=os.path.join(BASE_DIR, "templates"),
+        static_folder=os.path.join(BASE_DIR, "static")
+    )
     app.config.from_object(config_class)
 
-    # Ensure runtime directories exist
-    os.makedirs(app.config.get("EXPORTS_DIR", "exports"), exist_ok=True)
-    os.makedirs(app.config.get("UPLOADS_DIR", "uploads"), exist_ok=True)
-    os.makedirs(os.path.dirname(app.config.get("DATABASE_PATH", "database/sentiment.db")), exist_ok=True)
+    # Ensure runtime directories exist safely
+    for dir_key in ["EXPORTS_DIR", "UPLOADS_DIR"]:
+        target_dir = app.config.get(dir_key)
+        if target_dir:
+            try:
+                os.makedirs(target_dir, exist_ok=True)
+            except OSError:
+                pass
+
+    db_path = app.config.get("DATABASE_PATH")
+    if db_path and db_path != ":memory:":
+        try:
+            os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
+        except OSError:
+            pass
 
     # Initialize SQLite schema
     with app.app_context():
-        init_db(app.config.get("DATABASE_PATH"))
+        try:
+            init_db(app.config.get("DATABASE_PATH"))
+        except Exception as e:
+            logger.warning(f"Database initialization deferred: {e}")
 
     # Register Blueprints
     from routes.dashboard import dashboard_bp

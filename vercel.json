@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/index"
+    }
+  ],
+  "functions": {
+    "api/index.py": {
+      "includeFiles": "{models/**,templates/**,static/**,database/**}",
+      "excludeFiles": "{dataset/**,tests/**,.venv/**,*.pyc,__pycache__/**}",
+      "maxDuration": 30
+    }
+  }
+}

@@ -1,0 +1,21 @@
+# Local Python virtual environment
+.venv/
+env/
+venv/
+
+# Large datasets and raw data files
+dataset/*.csv
+dataset/*.tsv
+dataset/*.txt
+dataset/raw_tweeteval/
+dataset/raw_goemotions*
+dataset/raw/
+
+# Tests & caches
+tests/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+.git/
+.gitignore
+*.log
