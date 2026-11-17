@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis History - Sentiment Analysis Analytics{% endblock %}
+{% block page_title %}Analysis History{% endblock %}
+{% block page_subtitle %}Explore, filter, and audit past text classifications recorded in SQLite{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 24px;">
+  <!-- Filter Toolbar -->
+  <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between;">
+    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; flex: 1; min-width: 280px;">
+      <!-- Search Input -->
+      <div style="position: relative; flex: 1; min-width: 200px;">
+        <input type="text" id="historySearchInput" class="form-control" placeholder="Search by text keyword..." style="padding-left: 36px;">
+        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 14px; color: var(--text-muted); font-size: 13px;"></i>
+      </div>
+
+      <!-- Sentiment Filter -->
+      <select id="sentimentFilter" class="form-select" style="width: auto;">
+        <option value="all">All Sentiments</option>
+        <option value="Positive">Positive</option>
+        <option value="Negative">Negative</option>
+        <option value="Neutral">Neutral</option>
+      </select>
+
+      <!-- Model Filter -->
+      <select id="modelFilter" class="form-select" style="width: auto;">
+        <option value="all">All Models</option>
+        {% for m in models %}
+        <option value="{{ m }}">{{ m }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <a href="{{ url_for('reports.export_csv') }}" class="btn btn-outline">
+        <i class="fa-solid fa-download"></i> Export History CSV
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- History Table Card -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="table" id="historyTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Original Text</th>
+          <th>Sentiment</th>
+          <th>Model</th>
+          <th>Pos / Neg / Neu</th>
+          <th>Type</th>
+          <th>Date</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody id="historyTableBody">
+        <!-- Injected via JavaScript -->
+      </tbody>
+    </table>
+  </div>
+
+  <div id="historyEmptyState" class="empty-state" style="display: none;">
+    <div class="empty-state-icon"><i class="fa-solid fa-box-archive"></i></div>
+    <h4>No Records Found</h4>
+    <p>Try adjusting your search criteria or analyze new text.</p>
+  </div>
+
+  <!-- Pagination Controls -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+    <span id="paginationInfo" style="font-size: 13px; color: var(--text-muted);">Showing 0 to 0 of 0 entries</span>
+    <div style="display: flex; gap: 8px;">
+      <button id="prevPageBtn" class="btn btn-outline" style="padding: 6px 14px; font-size: 12px;" disabled>
+        <i class="fa-solid fa-chevron-left"></i> Previous
+      </button>
+      <button id="nextPageBtn" class="btn btn-outline" style="padding: 6px 14px; font-size: 12px;" disabled>
+        Next <i class="fa-solid fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let currentPage = 1;
+  const perPage = 15;
+
+  async function loadHistory() {
+    const search = document.getElementById('historySearchInput').value;
+    const sentiment = document.getElementById('sentimentFilter').value;
+    const model = document.getElementById('modelFilter').value;
+
+    const url = `/api/history?page=${currentPage}&per_page=${perPage}&q=${encodeURIComponent(search)}&sentiment=${encodeURIComponent(sentiment)}&model=${encodeURIComponent(model)}`;
+
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      renderTable(data);
+    } catch (err) {
+      console.error('Failed to load history:', err);
+    }
+  }
+
+  function renderTable(data) {
+    const tbody = document.getElementById('historyTableBody');
+    const emptyState = document.getElementById('historyEmptyState');
+    tbody.innerHTML = '';
+
+    if (!data.records || data.records.length === 0) {
+      emptyState.style.display = 'block';
+      document.getElementById('paginationInfo').innerText = 'Showing 0 records';
+      document.getElementById('prevPageBtn').disabled = true;
+      document.getElementById('nextPageBtn').disabled = true;
+      return;
+    }
+
+    emptyState.style.display = 'none';
+
+    data.records.forEach(r => {
+      let badgeClass = 'badge-neutral';
+      if (r.sentiment === 'Positive') badgeClass = 'badge-positive';
+      else if (r.sentiment === 'Negative') badgeClass = 'badge-negative';
+
+      const pos = r.positive_score !== null ? (r.positive_score * 100).toFixed(0) + '%' : '-';
+      const neg = r.negative_score !== null ? (r.negative_score * 100).toFixed(0) + '%' : '-';
+      const neu = r.neutral_score !== null ? (r.neutral_score * 100).toFixed(0) + '%' : '-';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-weight:600; color:var(--primary);">#${r.id}</td>
+        <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(r.input_text)}">
+          ${escapeHtml(r.input_text)}
+        </td>
+        <td><span class="badge ${badgeClass}">${r.sentiment}</span></td>
+        <td style="color:var(--text-muted); font-size:12px;">${r.model_name}</td>
+        <td style="font-size:12px; font-weight:500;">
+          <span style="color:var(--positive);">${pos}</span> /
+          <span style="color:var(--negative);">${neg}</span> /
+          <span style="color:var(--neutral);">${neu}</span>
+        </td>
+        <td><span style="font-size:11px; text-transform:uppercase; background:var(--bg-page); padding:3px 8px; border-radius:4px; font-weight:600;">${r.analysis_type}</span></td>
+        <td style="color:var(--text-light); font-size:12px;">${(r.created_at || '').substring(0, 16)}</td>
+        <td style="text-align:right;">
+          <button class="btn btn-outline" style="padding:4px 8px; font-size:11px; color:var(--negative); border-color:#FECACA;" onclick="confirmDelete(${r.id})">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const start = (data.page - 1) * data.per_page + 1;
+    const end = Math.min(data.page * data.per_page, data.total);
+    document.getElementById('paginationInfo').innerText = `Showing ${start} to ${end} of ${data.total} records`;
+
+    document.getElementById('prevPageBtn').disabled = data.page <= 1;
+    document.getElementById('nextPageBtn').disabled = data.page >= data.total_pages;
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.innerText = text || '';
+    return div.innerHTML;
+  }
+
+  async function confirmDelete(id) {
+    if (!confirm(`Are you sure you want to delete analysis record #${id}?`)) return;
+
+    try {
+      const res = await fetch(`/api/history/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        loadHistory();
+      } else {
+        alert('Failed to delete record.');
+      }
+    } catch (err) {
+      alert('Error deleting record: ' + err.message);
+    }
+  }
+
+  document.getElementById('prevPageBtn').addEventListener('click', () => {
+    if (currentPage > 1) { currentPage--; loadHistory(); }
+  });
+  document.getElementById('nextPageBtn').addEventListener('click', () => {
+    currentPage++; loadHistory();
+  });
+
+  document.getElementById('sentimentFilter').addEventListener('change', () => { currentPage = 1; loadHistory(); });
+  document.getElementById('modelFilter').addEventListener('change', () => { currentPage = 1; loadHistory(); });
+
+  let searchTimeout = null;
+  document.getElementById('historySearchInput').addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => { currentPage = 1; loadHistory(); }, 300);
+  });
+
+  document.addEventListener('DOMContentLoaded', loadHistory);
+</script>
+{% endblock %}

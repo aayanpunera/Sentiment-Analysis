@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Emotion Detection - Sentiment Analysis Analytics{% endblock %}
+{% block page_title %}Emotion Classification{% endblock %}
+{% block page_subtitle %}Detect distinct affective states (Happiness, Sadness, Anger, Fear, Surprise, Love, Neutral) using GoEmotions{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto;">
+  <div class="card" style="margin-bottom: 24px;">
+    <form id="emotionForm">
+      <div class="form-group">
+        <label for="emotionText" class="form-label">Enter Text for Emotion Analysis</label>
+        <textarea id="emotionText" class="form-control" rows="3" placeholder="Enter personal reflection, social post, or expressive statement..."></textarea>
+      </div>
+
+      <!-- Quick samples -->
+      <div style="margin-bottom: 20px;">
+        <span style="font-size: 12px; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 8px;">
+          Try affective samples:
+        </span>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <button type="button" class="btn btn-outline emo-sample-btn" style="padding: 4px 10px; font-size: 11px;" data-sample="I am overjoyed and so proud of our team's amazing victory!">
+            😊 Happiness
+          </button>
+          <button type="button" class="btn btn-outline emo-sample-btn" style="padding: 4px 10px; font-size: 11px;" data-sample="I feel completely heartbroken and overwhelmed with sorrow today.">
+            😢 Sadness
+          </button>
+          <button type="button" class="btn btn-outline emo-sample-btn" style="padding: 4px 10px; font-size: 11px;" data-sample="This completely unacceptable service makes me furious and angry!">
+            😡 Anger
+          </button>
+          <button type="button" class="btn btn-outline emo-sample-btn" style="padding: 4px 10px; font-size: 11px;" data-sample="I am genuinely terrified and anxious about tomorrow's critical outcome.">
+            😨 Fear
+          </button>
+          <button type="button" class="btn btn-outline emo-sample-btn" style="padding: 4px 10px; font-size: 11px;" data-sample="Whoa, I was not expecting that at all! What a stunning shock!">
+            😲 Surprise
+          </button>
+          <button type="button" class="btn btn-outline emo-sample-btn" style="padding: 4px 10px; font-size: 11px;" data-sample="I love and cherish you with all my heart. Thank you so much.">
+            ❤️ Love
+          </button>
+        </div>
+      </div>
+
+      <div id="emotionAlert" class="alert alert-danger" style="display: none;"></div>
+
+      <button type="submit" id="emotionSubmitBtn" class="btn btn-primary" style="width: 100%;">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Classify Emotion
+      </button>
+    </form>
+  </div>
+
+  <!-- Emotion Result Card -->
+  <div id="emotionResultCard" class="result-card" style="margin-bottom: 24px;">
+    <div class="result-header">
+      <div>
+        <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Primary Detected Emotion</span>
+        <div id="resultEmotionLabel" class="result-sentiment" style="margin-top: 4px; color: var(--primary);">-</div>
+      </div>
+      <div style="text-align: right;">
+        <span style="font-size: 12px; color: var(--text-muted);">Model Confidence</span>
+        <div id="resultEmotionConfidence" style="font-size: 20px; font-weight: 700; color: var(--primary);">-</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+      <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;">7-Class Affective Distribution</h4>
+      <div id="emotionBarsContainer"></div>
+    </div>
+
+    <div style="margin-top: 16px; padding: 12px; background: var(--bg-page); border-radius: var(--radius-md); font-size: 12px; color: var(--text-muted);">
+      <i class="fa-solid fa-circle-info" style="color: var(--primary); margin-right: 6px;"></i>
+      Trained on Google Research GoEmotions dataset. Separate from sentiment polarity.
+    </div>
+  </div>
+
+  <!-- Recent Emotion History -->
+  <div class="card">
+    <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">Recent Emotion Classifications</h3>
+    {% if recent_emotions %}
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Input Text</th>
+            <th>Emotion</th>
+            <th>Confidence</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in recent_emotions %}
+          <tr>
+            <td style="font-weight: 600; color: var(--primary);">#{{ r.id }}</td>
+            <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ r.input_text }}</td>
+            <td><span class="badge" style="background: var(--primary-light); color: var(--primary); font-weight: 700;">{{ r.emotion }}</span></td>
+            <td>{{ (r.confidence * 100)|round(1) }}%</td>
+            <td style="color: var(--text-light); font-size: 12px;">{{ r.created_at[:16] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon"><i class="fa-solid fa-heart"></i></div>
+      <h4>No Emotions Analyzed Yet</h4>
+      <p>Submit text above to detect affective states.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Sample buttons
+  document.querySelectorAll('.emo-sample-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.getElementById('emotionText').value = this.getAttribute('data-sample');
+    });
+  });
+
+  const emoForm = document.getElementById('emotionForm');
+  const emoAlert = document.getElementById('emotionAlert');
+  const emoSubmitBtn = document.getElementById('emotionSubmitBtn');
+  const emoResultCard = document.getElementById('emotionResultCard');
+
+  emoForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    emoAlert.style.display = 'none';
+
+    const text = document.getElementById('emotionText').value.trim();
+    if (!text) {
+      emoAlert.innerText = 'Please enter text to analyze emotion.';
+      emoAlert.style.display = 'block';
+      return;
+    }
+
+    emoSubmitBtn.disabled = true;
+    emoSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analyzing Emotion...';
+
+    try {
+      const response = await fetch('/api/emotion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text })
+      });
+      const data = await response.json();
+
+      if (!response.ok || data.status === 'error') {
+        emoAlert.innerText = data.message || 'Emotion analysis failed.';
+        emoAlert.style.display = 'block';
+        return;
+      }
+
+      // Populate results
+      emoResultCard.style.display = 'block';
+      document.getElementById('resultEmotionLabel').innerText = data.emotion;
+      document.getElementById('resultEmotionConfidence').innerText = (data.confidence * 100).toFixed(1) + '%';
+
+      const barsContainer = document.getElementById('emotionBarsContainer');
+      barsContainer.innerHTML = '';
+
+      // Render probability bars for each category
+      for (const [emo, score] of Object.entries(data.scores)) {
+        const pct = (score * 100).toFixed(1);
+        const isMax = emo === data.emotion;
+
+        const barHtml = `
+          <div class="score-bar-container">
+            <div class="score-bar-header">
+              <span style="${isMax ? 'font-weight:700; color:var(--primary);' : ''}">${emo}</span>
+              <span>${pct}%</span>
+            </div>
+            <div class="score-track">
+              <div class="score-fill purple" style="width: ${pct}%;"></div>
+            </div>
+          </div>
+        `;
+        barsContainer.insertAdjacentHTML('beforeend', barHtml);
+      }
+
+      emoResultCard.scrollIntoView({ behavior: 'smooth' });
+
+    } catch (err) {
+      emoAlert.innerText = 'Network error: ' + err.message;
+      emoAlert.style.display = 'block';
+    } finally {
+      emoSubmitBtn.disabled = false;
+      emoSubmitBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Classify Emotion';
+    }
+  });
+</script>
+{% endblock %}

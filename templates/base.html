@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Sentiment Analysis Analytics{% endblock %}</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Chart.js for data visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom Purple Analytics Theme -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-chart-pie"></i>
+        </div>
+        <div class="brand-text">
+          <h1>Sentix Analytics</h1>
+          <span>ML Sentiment Platform</span>
+        </div>
+      </div>
+
+      <ul class="sidebar-menu">
+        <li class="menu-item">
+          <a href="{{ url_for('dashboard.index') }}" class="menu-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+            <span class="menu-icon"><i class="fa-solid fa-gauge-high"></i></span>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a href="{{ url_for('analyzer.analyze_page') }}" class="menu-link {% if request.endpoint == 'analyzer.analyze_page' %}active{% endif %}">
+            <span class="menu-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+            <span>Text Analyzer</span>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a href="{{ url_for('bulk.bulk_page') }}" class="menu-link {% if request.endpoint == 'bulk.bulk_page' %}active{% endif %}">
+            <span class="menu-icon"><i class="fa-solid fa-file-csv"></i></span>
+            <span>Bulk CSV Analyzer</span>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a href="{{ url_for('emotion.emotion_page') }}" class="menu-link {% if request.endpoint == 'emotion.emotion_page' %}active{% endif %}">
+            <span class="menu-icon"><i class="fa-solid fa-face-smile"></i></span>
+            <span>Emotion Detection</span>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a href="{{ url_for('history.history_page') }}" class="menu-link {% if request.endpoint == 'history.history_page' %}active{% endif %}">
+            <span class="menu-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
+            <span>Analysis History</span>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a href="{{ url_for('performance.performance_page') }}" class="menu-link {% if request.endpoint == 'performance.performance_page' %}active{% endif %}">
+            <span class="menu-icon"><i class="fa-solid fa-chart-line"></i></span>
+            <span>Model Performance</span>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a href="{{ url_for('reports.reports_page') }}" class="menu-link {% if request.endpoint == 'reports.reports_page' %}active{% endif %}">
+            <span class="menu-icon"><i class="fa-solid fa-file-invoice"></i></span>
+            <span>Reports & Exports</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <p>College Major Project</p>
+        <p style="font-weight:600; color:var(--primary); margin-top:2px;">Python &amp; Scikit-learn</p>
+      </div>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <div class="main-wrapper">
+      <header class="topbar">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <button class="mobile-toggle" id="sidebarToggle" aria-label="Toggle navigation">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div class="page-title">
+            <h2>{% block page_title %}Sentiment Dashboard{% endblock %}</h2>
+            <p>{% block page_subtitle %}Live metrics & NLP insights{% endblock %}</p>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); background: var(--bg-page); padding: 6px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+            <i class="fa-solid fa-circle-check" style="color: var(--positive);"></i>
+            <span>3 Supervised Models Active</span>
+          </div>
+        </div>
+      </header>
+
+      <main class="content-body">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <!-- Shared Global Script -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

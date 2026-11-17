@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk CSV Analyzer - Sentiment Analysis Analytics{% endblock %}
+{% block page_title %}Bulk CSV Dataset Analyzer{% endblock %}
+{% block page_subtitle %}Upload CSV datasets to batch classify hundreds or thousands of customer reviews{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 28px; margin-bottom: 28px;">
+  <!-- Upload Form Card -->
+  <div class="card">
+    <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">Upload CSV File</h3>
+
+    <form id="bulkForm" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="csvFileInput" class="form-label">Select CSV File (.csv)</label>
+        <input type="file" id="csvFileInput" name="file" class="form-control" accept=".csv" required>
+        <span style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 4px;">
+          Max file size: 16 MB. Max rows: 5,000 per batch.
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label for="columnInput" class="form-label">Target Text Column (Optional)</label>
+        <input type="text" id="columnInput" name="column_name" class="form-control" placeholder="e.g. text, review, comment (Auto-detected if blank)">
+      </div>
+
+      <div class="form-group">
+        <label for="bulkModelSelect" class="form-label">Classification Model</label>
+        <select id="bulkModelSelect" name="model_name" class="form-select">
+          {% for m in models %}
+          <option value="{{ m }}" {% if m == 'Logistic Regression' %}selected{% endif %}>{{ m }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div id="bulkAlert" class="alert alert-danger" style="display: none;"></div>
+
+      <button type="submit" id="bulkSubmitBtn" class="btn btn-primary" style="width: 100%;">
+        <i class="fa-solid fa-cloud-arrow-up"></i> Upload and Analyze Batch
+      </button>
+    </form>
+  </div>
+
+  <!-- Recent Batches -->
+  <div class="card">
+    <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">Recent Batch Jobs</h3>
+    {% if recent_batches %}
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Filename</th>
+            <th>Records</th>
+            <th>Export</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in recent_batches %}
+          <tr>
+            <td style="font-weight: 600; color: var(--primary);">#{{ b.id }}</td>
+            <td style="font-weight: 500;">{{ b.filename }}</td>
+            <td>{{ b.processed_records }} / {{ b.total_records }}</td>
+            <td>
+              <a href="{{ url_for('reports.export_csv') }}?batch_id={{ b.id }}" class="btn btn-outline" style="padding: 4px 10px; font-size: 11px;">
+                <i class="fa-solid fa-download"></i> CSV
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon"><i class="fa-solid fa-folder-open"></i></div>
+      <h4>No Past Batches</h4>
+      <p>Upload a file to start your first batch job.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Bulk Results Section -->
+<div id="bulkResultsContainer" class="card" style="display: none;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <h3 style="font-size: 18px; font-weight: 700;" id="batchTitle">Batch Results</h3>
+      <p style="font-size: 13px; color: var(--text-muted);" id="batchSubtitle"></p>
+    </div>
+    <a id="downloadBatchCsvBtn" href="#" class="btn btn-primary">
+      <i class="fa-solid fa-file-csv"></i> Download Classified CSV
+    </a>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid-cards" style="margin-bottom: 24px;">
+    <div class="card stat-card" style="padding: 16px;">
+      <div class="stat-icon purple"><i class="fa-solid fa-list-check"></i></div>
+      <div class="stat-info">
+        <h3 id="batchTotalCount">0</h3>
+        <p>Processed Rows</p>
+      </div>
+    </div>
+    <div class="card stat-card" style="padding: 16px;">
+      <div class="stat-icon green"><i class="fa-solid fa-face-smile"></i></div>
+      <div class="stat-info">
+        <h3 id="batchPositiveCount">0</h3>
+        <p>Positive</p>
+      </div>
+    </div>
+    <div class="card stat-card" style="padding: 16px;">
+      <div class="stat-icon red"><i class="fa-solid fa-face-frown"></i></div>
+      <div class="stat-info">
+        <h3 id="batchNegativeCount">0</h3>
+        <p>Negative</p>
+      </div>
+    </div>
+    <div class="card stat-card" style="padding: 16px;">
+      <div class="stat-icon blue"><i class="fa-solid fa-face-meh"></i></div>
+      <div class="stat-info">
+        <h3 id="batchNeutralCount">0</h3>
+        <p>Neutral</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Table -->
+  <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Preview (First 100 Rows)</h4>
+  <div class="table-responsive">
+    <table class="table" id="batchPreviewTable">
+      <thead>
+        <tr>
+          <th>Row #</th>
+          <th>Text Preview</th>
+          <th>Predicted Sentiment</th>
+          <th>Positive %</th>
+          <th>Negative %</th>
+          <th>Neutral %</th>
+        </tr>
+      </thead>
+      <tbody id="batchPreviewBody"></tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const bulkForm = document.getElementById('bulkForm');
+  const bulkAlert = document.getElementById('bulkAlert');
+  const bulkSubmitBtn = document.getElementById('bulkSubmitBtn');
+  const bulkResultsContainer = document.getElementById('bulkResultsContainer');
+
+  bulkForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    bulkAlert.style.display = 'none';
+
+    const fileInput = document.getElementById('csvFileInput');
+    if (!fileInput.files || fileInput.files.length === 0) {
+      bulkAlert.innerText = 'Please select a CSV file.';
+      bulkAlert.style.display = 'block';
+      return;
+    }
+
+    const formData = new FormData(bulkForm);
+    bulkSubmitBtn.disabled = true;
+    bulkSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing Batch...';
+
+    try {
+      const response = await fetch('/api/bulk-analyze', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+
+      if (!response.ok || data.status === 'error') {
+        bulkAlert.innerText = data.message || 'Batch analysis failed.';
+        bulkAlert.style.display = 'block';
+        return;
+      }
+
+      // Display results
+      bulkResultsContainer.style.display = 'block';
+      document.getElementById('batchTitle').innerText = `Batch #${data.batch_id}: ${data.filename}`;
+      document.getElementById('batchSubtitle').innerText = `Used column: "${data.column_used}" | Model: ${data.model_name}`;
+      document.getElementById('downloadBatchCsvBtn').href = `/reports/csv?batch_id=${data.batch_id}`;
+
+      document.getElementById('batchTotalCount').innerText = data.processed_records;
+      document.getElementById('batchPositiveCount').innerText = data.summary.Positive || 0;
+      document.getElementById('batchNegativeCount').innerText = data.summary.Negative || 0;
+      document.getElementById('batchNeutralCount').innerText = data.summary.Neutral || 0;
+
+      const tbody = document.getElementById('batchPreviewBody');
+      tbody.innerHTML = '';
+
+      data.results.forEach((row, i) => {
+        let badgeClass = 'badge-neutral';
+        if (row.sentiment === 'Positive') badgeClass = 'badge-positive';
+        else if (row.sentiment === 'Negative') badgeClass = 'badge-negative';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${i + 1}</td>
+          <td style="max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.text}</td>
+          <td><span class="badge ${badgeClass}">${row.sentiment}</span></td>
+          <td>${(row.positive_score * 100).toFixed(1)}%</td>
+          <td>${(row.negative_score * 100).toFixed(1)}%</td>
+          <td>${(row.neutral_score * 100).toFixed(1)}%</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      bulkResultsContainer.scrollIntoView({ behavior: 'smooth' });
+
+    } catch (err) {
+      bulkAlert.innerText = 'Network error during batch analysis: ' + err.message;
+      bulkAlert.style.display = 'block';
+    } finally {
+      bulkSubmitBtn.disabled = false;
+      bulkSubmitBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Upload and Analyze Batch';
+    }
+  });
+</script>
+{% endblock %}

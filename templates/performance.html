@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Model Performance - Sentiment Analysis Analytics{% endblock %}
+{% block page_title %}Algorithm Performance & Benchmarks{% endblock %}
+{% block page_subtitle %}Strict test-set evaluation results on held-out benchmark splits (No fabricated data){% endblock %}
+
+{% block content %}
+<!-- Model Metric Summary Cards -->
+<div class="grid-cards">
+  {% for m in metrics_list %}
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+      <h3 style="font-size: 15px; font-weight: 700; color: var(--text-main);">{{ m.model_name }}</h3>
+      {% if m.model_name == 'Logistic Regression' %}
+      <span class="badge badge-positive" style="font-size: 10px;">Best Model</span>
+      {% endif %}
+    </div>
+
+    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+      <span style="font-size: 13px; color: var(--text-muted);">Macro F1 Score</span>
+      <span style="font-size: 18px; font-weight: 700; color: var(--primary);">{{ m.f1_score }}</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; color: var(--text-muted); background: var(--bg-page); padding: 10px; border-radius: var(--radius-md);">
+      <div>Accuracy: <strong style="color:var(--text-main);">{{ (m.accuracy * 100)|round(1) }}%</strong></div>
+      <div>Precision: <strong style="color:var(--text-main);">{{ (m.precision * 100)|round(1) }}%</strong></div>
+      <div>Recall: <strong style="color:var(--text-main);">{{ (m.recall * 100)|round(1) }}%</strong></div>
+      <div>Test Rows: <strong style="color:var(--text-main);">{{ m.testing_samples }}</strong></div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Comparison Chart Card -->
+<div class="card" style="margin-bottom: 28px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h3 style="font-size: 16px; font-weight: 700;">Multi-Model Benchmark Comparison</h3>
+    <span style="font-size: 12px; color: var(--text-muted);">Evaluation on 12,284 TweetEval Test Samples</span>
+  </div>
+  <div style="text-align: center;">
+    <img src="{{ url_for('static', filename='images/comparison_chart.png') }}" alt="Model Comparison Chart" style="max-width: 100%; height: auto; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
+  </div>
+</div>
+
+<!-- Confusion Matrices and Detailed Reports -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px;">
+  {% for model_name, info in detailed_metrics.items() %}
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+      <h3 style="font-size: 16px; font-weight: 700;">{{ model_name }}</h3>
+      <span style="font-size: 12px; color: var(--text-muted);">Trained in {{ info.train_duration_sec }}s</span>
+    </div>
+
+    <!-- Per Class Metrics -->
+    <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Per-Class Evaluation</h4>
+    <div class="table-responsive" style="margin-bottom: 20px;">
+      <table class="table" style="font-size: 12px;">
+        <thead>
+          <tr>
+            <th>Class</th>
+            <th>Precision</th>
+            <th>Recall</th>
+            <th>F1-Score</th>
+            <th>Support</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cls in ['Negative', 'Neutral', 'Positive'] %}
+          {% if cls in info.classification_report %}
+          {% set cr = info.classification_report[cls] %}
+          <tr>
+            <td style="font-weight: 600;">{{ cls }}</td>
+            <td>{{ (cr.precision * 100)|round(1) }}%</td>
+            <td>{{ (cr.recall * 100)|round(1) }}%</td>
+            <td style="font-weight: 600; color: var(--primary);">{{ cr['f1-score']|round(3) }}</td>
+            <td>{{ cr.support|int }}</td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Confusion Matrix -->
+    <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Confusion Matrix (True \ Predicted)</h4>
+    <div class="table-responsive">
+      <table class="table" style="text-align: center; font-size: 12px;">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Pred: Neg</th>
+            <th>Pred: Neu</th>
+            <th>Pred: Pos</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set cm = info.confusion_matrix %}
+          <tr>
+            <td style="font-weight:600; text-align:left;">True: Neg</td>
+            <td style="background-color: var(--primary-light); font-weight: 700;">{{ cm[0][0] }}</td>
+            <td>{{ cm[0][1] }}</td>
+            <td>{{ cm[0][2] }}</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600; text-align:left;">True: Neu</td>
+            <td>{{ cm[1][0] }}</td>
+            <td style="background-color: var(--primary-light); font-weight: 700;">{{ cm[1][1] }}</td>
+            <td>{{ cm[1][2] }}</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600; text-align:left;">True: Pos</td>
+            <td>{{ cm[2][0] }}</td>
+            <td>{{ cm[2][1] }}</td>
+            <td style="background-color: var(--primary-light); font-weight: 700;">{{ cm[2][2] }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -53,6 +53,7 @@ dataset/*.txt
 dataset/raw_tweeteval/
 dataset/raw_goemotions*
 dataset/raw/
+!dataset/sample_test.csv
 !dataset/download_datasets.py
 
 # IDE & OS

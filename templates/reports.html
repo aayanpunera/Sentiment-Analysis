@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Reports & Exports - Sentiment Analysis Analytics{% endblock %}
+{% block page_title %}Reports &amp; Data Exports{% endblock %}
+{% block page_subtitle %}Generate professional analytical PDF reports and export historical datasets to CSV{% endblock %}
+
+{% block content %}
+<div class="grid-cards" style="margin-bottom: 28px;">
+  <!-- PDF Export Card -->
+  <div class="card" style="border-top: 4px solid var(--primary);">
+    <div style="font-size: 32px; color: var(--primary); margin-bottom: 12px;">
+      <i class="fa-solid fa-file-pdf"></i>
+    </div>
+    <h3 style="font-size: 17px; font-weight: 700; margin-bottom: 6px;">Executive PDF Summary</h3>
+    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+      Generates an official multi-page analytics report with model comparison benchmarks, sentiment distribution tables, and recent activity.
+    </p>
+    <a href="{{ url_for('reports.export_pdf') }}" class="btn btn-primary" style="width: 100%;">
+      <i class="fa-solid fa-download"></i> Download PDF Report
+    </a>
+  </div>
+
+  <!-- CSV History Export Card -->
+  <div class="card" style="border-top: 4px solid var(--positive);">
+    <div style="font-size: 32px; color: var(--positive); margin-bottom: 12px;">
+      <i class="fa-solid fa-file-csv"></i>
+    </div>
+    <h3 style="font-size: 17px; font-weight: 700; margin-bottom: 6px;">Historical Dataset (CSV)</h3>
+    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+      Exports all recorded predictions, model identifiers, calibrated class probabilities, and timestamps directly into standard CSV format.
+    </p>
+    <a href="{{ url_for('reports.export_csv') }}" class="btn btn-outline" style="width: 100%; border-color: var(--positive); color: var(--positive);">
+      <i class="fa-solid fa-download"></i> Download History CSV
+    </a>
+  </div>
+</div>
+
+<!-- Available Batch Exports -->
+<div class="card">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h3 style="font-size: 16px; font-weight: 700;">Individual Bulk Batch Exports</h3>
+    <span style="font-size: 12px; color: var(--text-muted);">{{ batches|length }} Batches Available</span>
+  </div>
+
+  {% if batches %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Batch ID</th>
+          <th>Original Filename</th>
+          <th>Total Records</th>
+          <th>Model Used</th>
+          <th>Uploaded Date</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in batches %}
+        <tr>
+          <td style="font-weight: 600; color: var(--primary);">#{{ b.id }}</td>
+          <td style="font-weight: 500;">{{ b.filename }}</td>
+          <td>{{ b.processed_records }} / {{ b.total_records }}</td>
+          <td style="color: var(--text-muted); font-size: 12px;">{{ b.model_name }}</td>
+          <td style="color: var(--text-light); font-size: 12px;">{{ b.created_at[:16] }}</td>
+          <td style="text-align: right;">
+            <a href="{{ url_for('reports.export_csv') }}?batch_id={{ b.id }}" class="btn btn-primary" style="padding: 5px 12px; font-size: 12px;">
+              <i class="fa-solid fa-download"></i> Export CSV
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon"><i class="fa-solid fa-file-excel"></i></div>
+    <h4>No Batch Files Uploaded Yet</h4>
+    <p>Upload a CSV file in the Bulk Analyzer to generate downloadable enriched batch outputs.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
