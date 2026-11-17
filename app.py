@@ -72,14 +72,14 @@ def create_app(config_class=Config):
     # Global Error Handlers
     @app.errorhandler(404)
     def handle_not_found(e):
-        if request.path.startswith("/api/"):
+        if request.path.startswith("/api/") and not request.path.startswith("/api/index"):
             return jsonify({"status": "error", "message": "Resource not found."}), 404
         return render_template("base.html", error_message="Page Not Found (404)"), 404
 
     @app.errorhandler(500)
     def handle_server_error(e):
         logger.exception("Unhandled server error encountered")
-        if request.path.startswith("/api/"):
+        if request.path.startswith("/api/") and not request.path.startswith("/api/index"):
             return jsonify({"status": "error", "message": "Internal server error occurred."}), 500
         return render_template("base.html", error_message="An internal server error occurred."), 500
 
