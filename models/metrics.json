@@ -1,0 +1,182 @@
+{
+  "Multinomial Naive Bayes": {
+    "accuracy": 0.5776,
+    "precision": 0.5963,
+    "recall": 0.5498,
+    "f1_score": 0.5398,
+    "confusion_matrix": [
+      [
+        1165,
+        2448,
+        359
+      ],
+      [
+        445,
+        4516,
+        976
+      ],
+      [
+        52,
+        909,
+        1414
+      ]
+    ],
+    "classification_report": {
+      "Negative": {
+        "precision": 0.7009626955475331,
+        "recall": 0.2933031218529708,
+        "f1-score": 0.41356052538161164,
+        "support": 3972.0
+      },
+      "Neutral": {
+        "precision": 0.5736059951733774,
+        "recall": 0.7606535287182078,
+        "f1-score": 0.6540188269370022,
+        "support": 5937.0
+      },
+      "Positive": {
+        "precision": 0.514368861404147,
+        "recall": 0.5953684210526315,
+        "f1-score": 0.5519125683060109,
+        "support": 2375.0
+      },
+      "accuracy": 0.5775805926408336,
+      "macro avg": {
+        "precision": 0.5963125173750191,
+        "recall": 0.5497750238746034,
+        "f1-score": 0.5398306402082083,
+        "support": 12284.0
+      },
+      "weighted avg": {
+        "precision": 0.6033334960838482,
+        "recall": 0.5775805926408336,
+        "f1-score": 0.5565259306469814,
+        "support": 12284.0
+      }
+    },
+    "training_samples": 45615,
+    "testing_samples": 12284,
+    "train_duration_sec": 5.89,
+    "trained_at": "2026-11-17T19:48:31.126142"
+  },
+  "Logistic Regression": {
+    "accuracy": 0.5892,
+    "precision": 0.5827,
+    "recall": 0.6026,
+    "f1_score": 0.5868,
+    "confusion_matrix": [
+      [
+        2733,
+        966,
+        273
+      ],
+      [
+        1911,
+        3076,
+        950
+      ],
+      [
+        308,
+        638,
+        1429
+      ]
+    ],
+    "classification_report": {
+      "Negative": {
+        "precision": 0.5518982229402262,
+        "recall": 0.6880664652567976,
+        "f1-score": 0.6125056028686687,
+        "support": 3972.0
+      },
+      "Neutral": {
+        "precision": 0.6572649572649573,
+        "recall": 0.5181067879400371,
+        "f1-score": 0.5794480550061223,
+        "support": 5937.0
+      },
+      "Positive": {
+        "precision": 0.5388386123680241,
+        "recall": 0.6016842105263158,
+        "f1-score": 0.5685299383330018,
+        "support": 2375.0
+      },
+      "accuracy": 0.5892217518723543,
+      "macro avg": {
+        "precision": 0.5826672641910692,
+        "recall": 0.6026191545743835,
+        "f1-score": 0.5868278654025976,
+        "support": 12284.0
+      },
+      "weighted avg": {
+        "precision": 0.6002982332444389,
+        "recall": 0.5892217518723543,
+        "f1-score": 0.5880262097611999,
+        "support": 12284.0
+      }
+    },
+    "training_samples": 45615,
+    "testing_samples": 12284,
+    "train_duration_sec": 11.6,
+    "trained_at": "2026-11-17T19:48:44.409410"
+  },
+  "Linear SVM": {
+    "accuracy": 0.5815,
+    "precision": 0.5847,
+    "recall": 0.5656,
+    "f1_score": 0.5567,
+    "confusion_matrix": [
+      [
+        1477,
+        2060,
+        435
+      ],
+      [
+        654,
+        4199,
+        1084
+      ],
+      [
+        70,
+        838,
+        1467
+      ]
+    ],
+    "classification_report": {
+      "Negative": {
+        "precision": 0.6710586097228532,
+        "recall": 0.371852970795569,
+        "f1-score": 0.47853555807549003,
+        "support": 3972.0
+      },
+      "Neutral": {
+        "precision": 0.5916584472312245,
+        "recall": 0.7072595586996799,
+        "f1-score": 0.6443148688046647,
+        "support": 5937.0
+      },
+      "Positive": {
+        "precision": 0.4912926992632284,
+        "recall": 0.6176842105263158,
+        "f1-score": 0.5472859541130386,
+        "support": 2375.0
+      },
+      "accuracy": 0.5814881146206448,
+      "macro avg": {
+        "precision": 0.584669918739102,
+        "recall": 0.5655989133405216,
+        "f1-score": 0.5567121269977311,
+        "support": 12284.0
+      },
+      "weighted avg": {
+        "precision": 0.5979274796305046,
+        "recall": 0.5814881146206448,
+        "f1-score": 0.5719508917117884,
+        "support": 12284.0
+      }
+    },
+    "training_samples": 45615,
+    "testing_samples": 12284,
+    "train_duration_sec": 14.84,
+    "trained_at": "2026-11-17T19:49:01.354696"
+  }
+}
