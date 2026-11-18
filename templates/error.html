@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}{{ error_title|default('Error') }} - Sentix Analytics{% endblock %}
+{% block page_title %}{{ error_title|default('Page Notice') }}{% endblock %}
+{% block page_subtitle %}{{ error_subtitle|default('Routing status notification') }}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 40px auto; text-align: center; padding: 48px 24px;">
+  <div style="font-size: 48px; color: var(--primary); margin-bottom: 16px;">
+    <i class="fa-solid fa-circle-exclamation"></i>
+  </div>
+  <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">{{ error_title|default('Page Not Found (404)') }}</h3>
+  <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px; line-height: 1.6;">
+    {{ error_message|default('The requested page or endpoint could not be found. Please return to the analytics dashboard.') }}
+  </p>
+  <div style="display: flex; gap: 12px; justify-content: center;">
+    <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">
+      <i class="fa-solid fa-house"></i> Return to Dashboard
+    </a>
+    <a href="{{ url_for('analyzer.analyze_page') }}" class="btn btn-outline">
+      <i class="fa-solid fa-wand-magic-sparkles"></i> Text Analyzer
+    </a>
+  </div>
+</div>
+{% endblock %}

@@ -69,6 +69,13 @@ def create_app(config_class=Config):
     app.register_blueprint(emotion_bp)
     app.register_blueprint(reports_bp)
 
+    # Vercel Root Entrypoint Route Aliases
+    @app.route("/api")
+    @app.route("/api/index")
+    def vercel_root_entrypoint():
+        from routes.dashboard import index
+        return index()
+
     # Static Files Explicit Route
     @app.route("/static/<path:filename>")
     def serve_static_files(filename):
@@ -81,16 +88,16 @@ def create_app(config_class=Config):
     # Global Error Handlers
     @app.errorhandler(404)
     def handle_not_found(e):
-        if request.path.startswith("/api/") and not request.path.startswith("/api/index"):
+        if request.path.startswith("/api/") and not request.path.startswith("/api/index") and request.path != "/api":
             return jsonify({"status": "error", "message": "Resource not found."}), 404
-        return render_template("base.html", error_message="Page Not Found (404)"), 404
+        return render_template("error.html", error_title="Page Not Found (404)", error_message=f"The requested URL '{request.path}' was not found on this server."), 404
 
     @app.errorhandler(500)
     def handle_server_error(e):
         logger.exception("Unhandled server error encountered")
-        if request.path.startswith("/api/") and not request.path.startswith("/api/index"):
+        if request.path.startswith("/api/") and not request.path.startswith("/api/index") and request.path != "/api":
             return jsonify({"status": "error", "message": "Internal server error occurred."}), 500
-        return render_template("base.html", error_message="An internal server error occurred."), 500
+        return render_template("error.html", error_title="Server Error (500)", error_message=f"An internal error occurred: {str(e)}"), 500
 
     logger.info("Application initialized successfully with all Blueprints registered.")
     return app

@@ -70,6 +70,7 @@ def init_db(db_path: Optional[str] = None):
         try:
             logger.info(f"Copying pre-packaged database from {PREPACKAGED_DB_PATH} to {path}...")
             shutil.copy2(PREPACKAGED_DB_PATH, path)
+            sync_model_metrics_from_json(path)
             return
         except Exception as e:
             logger.warning(f"Failed to copy pre-packaged db: {e}. Falling back to fresh schema initialization.")
@@ -447,4 +448,17 @@ def get_model_metrics(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
             ORDER BY f1_score DESC
             """
         ).fetchall()
+
+        if not rows:
+            path = db_path or os.environ.get("DATABASE_PATH", DEFAULT_DB_PATH)
+            sync_model_metrics_from_json(path)
+            rows = conn.execute(
+                """
+                SELECT id, model_name, accuracy, precision, recall, f1_score,
+                       training_samples, testing_samples, trained_at
+                FROM model_metrics
+                ORDER BY f1_score DESC
+                """
+            ).fetchall()
+
         return [dict(r) for r in rows]

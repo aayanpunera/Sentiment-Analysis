@@ -26,10 +26,16 @@ class VercelPathFixMiddleware:
         self.wsgi_app = wsgi_app
 
     def __call__(self, environ, start_response):
-        # Prefer original requested URI if provided by proxy headers
-        orig_uri = environ.get("HTTP_X_FORWARDED_URI") or environ.get("HTTP_X_ORIGINAL_URI") or environ.get("RAW_URI")
-        if orig_uri and not orig_uri.startswith("/api/index"):
-            environ["PATH_INFO"] = orig_uri.split("?")[0]
+        # 1. Prefer Vercel's x-matched-path header
+        matched_path = environ.get("HTTP_X_MATCHED_PATH") or environ.get("HTTP_X_VERCEL_MATCHED_PATH")
+
+        if matched_path:
+            # If matched_path starts with /api/index, strip it to get the real route
+            if matched_path.startswith("/api/index"):
+                stripped = matched_path[len("/api/index"):]
+                environ["PATH_INFO"] = stripped if (stripped.startswith("/") or not stripped) else "/" + stripped
+            else:
+                environ["PATH_INFO"] = matched_path
         else:
             path_info = environ.get("PATH_INFO", "")
             if path_info.startswith("/api/index"):
@@ -38,6 +44,21 @@ class VercelPathFixMiddleware:
             elif path_info.startswith("/api.py"):
                 stripped = path_info[len("/api.py"):]
                 environ["PATH_INFO"] = stripped if (stripped.startswith("/") or not stripped) else "/" + stripped
+            elif path_info == "/api" or path_info == "/api/":
+                environ["PATH_INFO"] = "/"
+            elif path_info.startswith("/api/"):
+                real_apis = (
+                    "/api/predict",
+                    "/api/bulk-analyze",
+                    "/api/history",
+                    "/api/metrics",
+                    "/api/emotion",
+                    "/api/stats",
+                    "/api/batch"
+                )
+                if not any(path_info.startswith(ra) for ra in real_apis):
+                    stripped = path_info[len("/api"):]
+                    environ["PATH_INFO"] = stripped if (stripped.startswith("/") or not stripped) else "/" + stripped
 
         if not environ.get("PATH_INFO") or environ["PATH_INFO"] == "":
             environ["PATH_INFO"] = "/"
