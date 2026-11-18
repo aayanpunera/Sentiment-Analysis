@@ -5,7 +5,7 @@ College Major Project - Main Application Factory.
 
 import os
 import logging
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, send_from_directory
 from config import Config
 from database.db import init_db
 
@@ -68,6 +68,15 @@ def create_app(config_class=Config):
     app.register_blueprint(performance_bp)
     app.register_blueprint(emotion_bp)
     app.register_blueprint(reports_bp)
+
+    # Static Files Explicit Route
+    @app.route("/static/<path:filename>")
+    def serve_static_files(filename):
+        for candidate_dir in [os.path.join(BASE_DIR, "public", "static"), os.path.join(BASE_DIR, "static")]:
+            target_path = os.path.join(candidate_dir, filename)
+            if os.path.exists(target_path):
+                return send_from_directory(candidate_dir, filename)
+        return jsonify({"status": "error", "message": "Static file not found."}), 404
 
     # Global Error Handlers
     @app.errorhandler(404)
