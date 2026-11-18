@@ -64,9 +64,16 @@ def api_bulk_analyze():
         if not content.strip():
             return jsonify({"status": "error", "message": "Uploaded CSV file is empty."}), 400
 
-        df = pd.read_csv(io.StringIO(content))
+        try:
+            df = pd.read_csv(io.StringIO(content))
+        except Exception:
+            try:
+                df = pd.read_csv(io.StringIO(content), engine="python", on_bad_lines="skip")
+            except Exception:
+                df = pd.read_csv(io.StringIO(content), sep=None, engine="python", on_bad_lines="skip")
+
         if df.empty:
-            return jsonify({"status": "error", "message": "Uploaded CSV contains no rows."}), 400
+            return jsonify({"status": "error", "message": "Uploaded CSV contains no valid rows."}), 400
 
         max_rows = current_app.config.get("MAX_BATCH_ROWS", 5000)
         if len(df) > max_rows:
